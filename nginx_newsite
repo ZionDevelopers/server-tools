@@ -38,12 +38,29 @@ $folders = [
     dirname($website_root) . '/temp/logs/'
 ];
 
+$files = [
+     dirname($website_root) . '/temp/logs/error.log',
+     dirname($website_root) . '/temp/logs/access.log'
+];
+
 foreach($folders as $folder) {
     @mkdir($folder, 0755, true);
     chown($folder, $srv_owner);
     chgrp($folder, $srv_group);
 }
 
+foreach($files as $file) {
+    file_put_contents($file, '');
+    chown($folder, $srv_owner);
+    chgrp($folder, $srv_group);
+}
+
+// Create symbolic link
 exec('nginx_ensite ' . $template_name . '.conf');
+// Reload NGINX server
 exec('service nginx reload');
-exec('chown -R webserver:webserver ' . $website_root);
+
+// Test access
+file_get_contents('http://' . $template_name);
+
+exec('chown -R ' . $srv_owner . ':' . $srv_group . ' ' . $website_root);
