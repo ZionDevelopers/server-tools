@@ -1,0 +1,2 @@
+ nginx_newsite linguist-language=php
+ nginx_delsite linguist-language=php
