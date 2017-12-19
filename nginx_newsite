@@ -1,0 +1,49 @@
+#!/usr/bin/php
+<?php
+$nginx_conf = '/etc/nginx/';
+$websites_root = '/srv/www/';
+$srv_owner = 'webserver';
+$srv_group = 'webserver';
+$domain_template = $nginx_conf . 'sites-available/domain-template.conf';
+$subdomain_template = $nginx_conf . 'sites-available/subdomain-template.conf';
+
+$domain = empty($argv[1]) ? null : $argv[1];
+$subdomain = empty($argv[2]) ? null : $argv[2];
+
+// Check if domain was set
+if (empty($domain)) {
+    exit('No domain was set!');
+}
+
+
+// Check if vHost is simple domain
+if (empty($subdomain)) {
+    $website_root = $websites_root . $domain . '/public_html/';
+    $template = file_get_contents($domain_template);
+    $template_name = $domain;
+} else {
+    $website_root = $websites_root . $domain . '/subdomains/' . $subdomain . '/public_html';
+    $template = file_get_contents($subdomain_template);
+    $template = str_replace('#SUBDOMAIN#', $subdomain, $template);
+    $template_name = $subdomain . '.' . $domain;
+}
+
+$template = str_replace('#DOMAIN#', $domain, $template);
+file_put_contents($nginx_conf . 'sites-available/' . $template_name . '.conf', $template);
+
+$folders = [
+    $website_root,
+    dirname($website_root),
+    dirname($website_root) . '/temp/',
+    dirname($website_root) . '/temp/logs/'
+];
+
+foreach($folders as $folder) {
+    @mkdir($folder, 0755, true);
+    chown($folder, $srv_owner);
+    chgrp($folder, $srv_group);
+}
+
+exec('nginx_ensite ' . $template_name . '.conf');
+exec('service nginx reload');
+exec('chown -R webserver:webserver ' . $website_root);
